@@ -41,6 +41,8 @@ public class OSSPublisher extends Publisher implements SimpleBuildStep {
 
     private final String maxRetries;
 
+    private final Boolean throwExceptionWhenFilePathNotExisted;
+
     public String getEndpoint() {
         return endpoint;
     }
@@ -71,7 +73,7 @@ public class OSSPublisher extends Publisher implements SimpleBuildStep {
 
     @DataBoundConstructor
     public OSSPublisher(String endpoint, String accessKeyId, String accessKeySecret, String bucketName,
-            String localPath, String remotePath, String maxRetries) {
+            String localPath, String remotePath, String maxRetries, Boolean throwExceptionWhenFilePathNotExisted) {
         this.endpoint = endpoint;
         this.accessKeyId = accessKeyId;
         this.accessKeySecret = Secret.fromString(accessKeySecret);
@@ -79,6 +81,11 @@ public class OSSPublisher extends Publisher implements SimpleBuildStep {
         this.localPath = localPath;
         this.remotePath = remotePath;
         this.maxRetries = maxRetries;
+        if (null == throwExceptionWhenFilePathNotExisted) {
+            this.throwExceptionWhenFilePathNotExisted = true;
+        } else {
+            this.throwExceptionWhenFilePathNotExisted = throwExceptionWhenFilePathNotExisted;
+        }
     }
 
     @Override
@@ -130,6 +137,9 @@ public class OSSPublisher extends Publisher implements SimpleBuildStep {
     private void uploadFile(OSSClient client, PrintStream logger, String key, FilePath path)
             throws InterruptedException, IOException {
         if (!path.exists()) {
+            if (this.throwExceptionWhenFilePathNotExisted) {
+                throw new RuntimeException("upload fail, file [" + path.getRemote() + "] not exists");
+            }
             logger.println("file [" + path.getRemote() + "] not exists, skipped");
             return;
         }
